@@ -1,0 +1,6 @@
+#!/bin/bash
+# Setup for new orbs: dev tools for screenshot testing (game itself has no build step).
+set -e
+cd "$(dirname "$0")/.."
+npm install
+npx playwright install chromium

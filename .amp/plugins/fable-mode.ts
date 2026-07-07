@@ -147,6 +147,9 @@ const SMART_TOOL_NAMES = [
 	'view_media',
 	'painter',
 	'read_mcp_resource',
+	'archive_current_thread',
+	'send_message_to_agg',
+	'mcp__*',
 ] as const
 
 

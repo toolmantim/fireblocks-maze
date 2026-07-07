@@ -5,6 +5,9 @@ import { zombieTex, creeperTex } from './textures.js';
 const lam = (c, o = {}) => new THREE.MeshLambertMaterial({ color: c, ...o });
 const box = (w, h, d, mat) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
 
+const ZOMBIE_STOP = 1.55;  // zombies halt here, beside the car — visible and shootable
+const ZOMBIE_REACH = 1.8;  // how close counts as a zombie "touch"
+
 function buildZombie() {
   const g = new THREE.Group();
   const skin = lam(0x57a64e);
@@ -143,7 +146,18 @@ export class Enemies {
       const myDist = this.field ? this.field[myIdx] : 65535;
       let dir = null;
       const chaseRange = e.kind === 'creeper' ? 10 : 8;
-      if (myDist < chaseRange) {
+      if (e.kind === 'zombie' && myDist < chaseRange && distToPlayer <= ZOMBIE_STOP) {
+        // hold position NEXT to the car: face it and flail arms so the kid
+        // can see exactly where to aim
+        const f = playerPos.clone().sub(p);
+        e.group.rotation.y = Math.atan2(f.x, f.z);
+        e.walkT += dt * 14;
+        const flail = Math.sin(e.walkT) * 0.6;
+        e.group.userData.armL.rotation.x = -0.5 + flail;
+        e.group.userData.armR.rotation.x = -0.5 - flail;
+        e.groanT -= dt;
+        if (e.groanT <= 0) { e.groanT = 2.5 + Math.random() * 3; events.push({ type: 'groan', dist: distToPlayer }); }
+      } else if (myDist < chaseRange) {
         let best = myDist, bx = 0, bz = 0;
         for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           const ni = (tz + dz) * n + (tx + dx);
@@ -190,9 +204,25 @@ export class Enemies {
         e.fuse = 1.15;
         events.push({ type: 'hiss' });
       }
-      // zombie touch hurts
-      if (e.kind === 'zombie' && distToPlayer < 1.0) {
+      // zombie touch hurts (they lunge from their standing spot)
+      if (e.kind === 'zombie' && distToPlayer < ZOMBIE_REACH) {
         events.push({ type: 'zombieHit', from: p.clone() });
+      }
+    }
+    // keep monsters from piling onto the same spot
+    for (let a = 0; a < this.list.length; a++) {
+      const ea = this.list[a];
+      if (ea.dead) continue;
+      for (let b = a + 1; b < this.list.length; b++) {
+        const eb = this.list[b];
+        if (eb.dead) continue;
+        const pa = ea.group.position, pb = eb.group.position;
+        const dx = pb.x - pa.x, dz = pb.z - pa.z;
+        const d = Math.hypot(dx, dz);
+        if (d > 0.85 || d < 0.001) continue;
+        const push = (0.85 - d) / d * 0.5;
+        pa.x -= dx * push; pa.z -= dz * push;
+        pb.x += dx * push; pb.z += dz * push;
       }
     }
     this.list = this.list.filter(e => !e.dead);

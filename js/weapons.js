@@ -42,10 +42,10 @@ export class Projectiles {
           else fx.sparkBurst(pos.x, pos.y, pos.z, p.weapon.color, 6, 2);
           dead = true; break;
         }
-        // hit monster
+        // hit monster (horizontal distance — projectiles fly above the ground anchor)
         for (const e of enemies.list) {
           if (e.dead) continue;
-          if (e.group.position.distanceTo(pos) < 0.75) {
+          if (Math.hypot(e.group.position.x - pos.x, e.group.position.z - pos.z) < 0.8) {
             if (p.weapon.blast) { this.explode(pos, world, enemies, fx, events); }
             else {
               const killed = enemies.damage(e, p.weapon.dmg, p.weapon.stun, fx);
@@ -78,9 +78,9 @@ export class Projectiles {
         fx.chunkBurst(c.x, 1, c.z, 0x9a6b3f, 12, 5);
       }
     }
-    // hurt monsters in radius
+    // hurt monsters in radius (horizontal)
     for (const e of enemies.list) {
-      if (!e.dead && e.group.position.distanceTo(pos) < r) {
+      if (!e.dead && Math.hypot(e.group.position.x - pos.x, e.group.position.z - pos.z) < r) {
         if (enemies.damage(e, 3, 0, fx)) events.push({ type: 'monsterDie' });
       }
     }

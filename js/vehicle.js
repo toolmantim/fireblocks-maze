@@ -135,9 +135,11 @@ export class Vehicle {
     this.moveAxis(0, this.vel.z * dt, world);
     this.group.position.copy(this.pos);
 
+    // aim follows the player's INPUT, not velocity — knockback must never
+    // swing the gun away from the monster that hit you
     const speed = this.vel.length();
-    if (speed > 0.6) {
-      const target = Math.atan2(this.vel.x, this.vel.z);
+    if (input.x * input.x + input.z * input.z > 0.06) {
+      const target = Math.atan2(input.x, input.z);
       let d = target - this.heading;
       while (d > Math.PI) d -= Math.PI * 2;
       while (d < -Math.PI) d += Math.PI * 2;

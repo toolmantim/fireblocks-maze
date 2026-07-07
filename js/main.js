@@ -197,8 +197,10 @@ function update(dt) {
     ui.redrawMinimapStatic(w);
   }
 
-  // enemies
-  const ev = G.enemies.update(dt, G.time, vehicle.pos, fp, fx);
+  // enemies — the drill only counts as a weapon while actually driving,
+  // so zombies can stand beside a parked car (visible + shootable)
+  const drillFp = vehicle.vel.length() > 2.5 ? fp : null;
+  const ev = G.enemies.update(dt, G.time, vehicle.pos, drillFp, fx);
   for (const e of ev) {
     if (e.type === 'zombieHit') hurt(1, e.from);
     else if (e.type === 'zombieDie' || e.type === 'monsterDie') SFX.zap();
@@ -215,7 +217,7 @@ function update(dt) {
   // firing
   G.fireCd -= dt;
   if (ui.firing && G.fireCd <= 0 && G.spawnT <= 0) {
-    const origin = vehicle.frontPoint(1.25); origin.y = 0.85;
+    const origin = vehicle.frontPoint(1.0); origin.y = 0.85; // close enough for point-blank shots
     G.projectiles.fire(origin, vehicle.forward(), vehicle.weapon);
     G.fireCd = vehicle.weapon.cd;
     if (vehicle.weapon.douse) SFX.splash(); else if (vehicle.weapon.blast) SFX.thump(); else SFX.pew();
@@ -284,9 +286,9 @@ function update(dt) {
   }
   w.setBeacon(obj.pos, obj.color);
 
-  // invulnerability blink
+  // invulnerability blink — mostly visible so the kid never loses their car mid-fight
   G.invuln -= dt;
-  vehicle.group.visible = G.invuln > 0 ? Math.floor(G.time * 12) % 2 === 0 : true;
+  vehicle.group.visible = G.invuln > 0 ? Math.floor(G.time * 15) % 5 !== 0 : true;
 
   w.update(dt, G.time, vehicle.pos);
   fx.update(dt);
